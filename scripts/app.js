@@ -1,5 +1,6 @@
 const tickers = ["JPM", "WFC", "BAC", "MS", "C", "GS"];
-const apiKey = "CI3AV3ONKZ7KAD1R";
+// const apiKey = "CI3AV3ONKZ7KAD1R";
+const apiKey = "DEMO";
 const operations = ["BALANCE_SHEET", "TIME_SERIES_DAILY", "OVERVIEW"];
 
 //main api call - called in subsequent async functions with different params

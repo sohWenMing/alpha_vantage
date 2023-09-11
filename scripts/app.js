@@ -3,6 +3,23 @@ const apiKey = "CI3AV3ONKZ7KAD1R";
 // const apiKey = "DEMO";
 const operations = ["BALANCE_SHEET", "TIME_SERIES_DAILY", "OVERVIEW"];
 
+//the ones to all are getBankInformation, getDayClose, calcTBV
+
+// let infoOutput = await runCalculations("JPM");
+async function runCalculations(ticker) {
+  const bankInfo = await getBankInformation(ticker);
+  console.log("bankinfo:", bankInfo);
+  const dayClose = await getDayClose(ticker);
+  console.log("dayClose:", dayClose);
+  const tangibleBV = await calcTBV(ticker);
+  console.log("tangibleBV", tangibleBV);
+  let infoObject = {};
+  infoObject["bank information"] = bankInfo;
+  infoObject["dayClose"] = dayClose;
+  infoObject["TBV"] = tangibleBV;
+  return infoObject;
+}
+
 //main api call - called in subsequent async functions with different params
 async function getData(operation, symbol, apiKey) {
   try {
@@ -67,7 +84,20 @@ async function calcTBV(ticker) {
       tbvList.push(getTBV(report));
       console.log("pushed");
     });
-    return tbvList;
+    console.log(tbvList);
+    let dateTextSeries = [];
+    tbvList.forEach((record) => {
+      dateTextSeries.push(record["fiscal date ending"]);
+    });
+    let dateSeries = dateTextToDate(dateTextSeries);
+    const latestDate = getLatestDate(dateSeries);
+    const latestDateString = getStringFromDate(latestDate);
+    const latestTBV = getTBVfromArray(tbvList, latestDateString);
+    const output = {
+      "latest quarter reported": latestDateString,
+      TBV: latestTBV,
+    };
+    return output;
   } catch {
     (error) => {
       console.log(error);
@@ -102,13 +132,15 @@ async function getDayClose(symbol) {
     console.log("timeseries", timeSeries);
     const dateText = Object.keys(timeSeries);
     console.log("dateText", dateText);
-    let dates = dateText.map((date) => {
-      return new Date(date);
-    });
+    let dates = dateTextToDate(dateText);
+    console.log("dates:", dates);
     const latestDate = getLatestDate(dates);
     latestDateString = getStringFromDate(latestDate);
-    console.log(latestDateString);
-    console.log(timeSeries[latestDateString]["4. close"]);
+    let info = {};
+    info.latestDate = latestDateString;
+    info.latestClose = timeSeries[latestDateString]["4. close"];
+    console.log(info);
+    return info;
   } catch {
     (error) => {
       console.log(error);
@@ -132,6 +164,23 @@ function getStringFromDate(date) {
   const day = String(date.getDate()).padStart(2, "0");
   const formattedDate = `${year}-${month}-${day}`;
   return formattedDate;
+}
+
+function dateTextToDate(array) {
+  let dateArray = array.map((dateText) => {
+    return new Date(dateText);
+  });
+  return dateArray;
+}
+
+function getTBVfromArray(array, searchString) {
+  let tbv = "";
+  array.forEach((record) => {
+    if (record["fiscal date ending"] === searchString) {
+      tbv = record["tbv"];
+    }
+  });
+  return tbv;
 }
 
 //   let information = {

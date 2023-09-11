@@ -1,13 +1,16 @@
 const tickers = ["JPM", "WFC", "BAC", "MS", "C", "GS"];
-// const apiKey = "CI3AV3ONKZ7KAD1R";
-const apiKey = "DEMO";
+const apiKey = "CI3AV3ONKZ7KAD1R";
+// const apiKey = "DEMO";
 const operations = ["BALANCE_SHEET", "TIME_SERIES_DAILY", "OVERVIEW"];
 
 //main api call - called in subsequent async functions with different params
 async function getData(operation, symbol, apiKey) {
   try {
     const result = await axios.get(`https://www.alphavantage.co/query?function=${operation}&symbol=${symbol}&apikey=${apiKey}`);
-    data = result.data;
+    console.log("result: ", result);
+    console.log("result.data: ", result.data);
+    let data = result.data;
+    console.log("data:", data);
     return data;
   } catch {
     (error) => {
@@ -39,32 +42,40 @@ async function getBankInformation(symbol) {
 //used to pull total balance sheet information, gets all annual and quarterly reports
 async function getBalanceSheet(symbol) {
   const data = await getData(operations[0], symbol, apiKey);
-  console.log(data);
   return data;
 }
 
 async function getQuarterlyReport(symbol) {
   try {
-    const qtrReps = await getBalanceSheet(symbol).quarterlyReports;
-    return qtrReps;
+    const balSheet = await getBalanceSheet(symbol);
+    return balSheet.quarterlyReports;
   } catch {
     (error) => {
       console.log(error);
     };
   }
 }
-// function getQuarterlyReport(symbol)
 
-// async function calcTBV(ticker) {
-//   let data = await getBalanceSheet(ticker);
-//   let qtrRepList = [];
-//   data.quarterlyReports.forEach((report) => {
-//     qtrRepList.push(report);
-//   });
-//   qtrRepList.forEach((report) => {
-//     getTBV(report);
-//   });
-// }
+async function calcTBV(ticker) {
+  let data = await getQuarterlyReport(ticker);
+  let qtrRepList = [];
+  data.forEach((report) => {
+    qtrRepList.push(report);
+  });
+  qtrRepList.forEach((report) => {
+    getTBV(report);
+  });
+}
+
+function getTBV(report) {
+  const fiscalDateEnding = report.fiscalDateEnding;
+  const totalAssets = report.totalAssets;
+  const goodWill = report.goodwill;
+  const intangibles = report.intangibleAssets;
+  const liabilities = report.totalLiabilities;
+  const shares = report.commonStockSharesOutstanding;
+  const tbvps = ((totalAssets - goodWill - intangibles - liabilities) / shares).toFixed(2);
+}
 // function getLatestDate(dateArray) {
 //   let latestDate = dateArray[0];
 //   for (let i = 0; i < dateArray.length; i++) {
@@ -103,14 +114,6 @@ async function getQuarterlyReport(symbol) {
 //   }
 // }
 
-// function getTBV(report) {
-//   const fiscalDateEnding = report.fiscalDateEnding;
-//   const totalAssets = report.totalAssets;
-//   const goodWill = report.goodwill;
-//   const intangibles = report.intangibleAssets;
-//   const liabilities = report.totalLiabilities;
-//   const shares = report.commonStockSharesOutstanding;
-//   const tbvps = ((totalAssets - goodWill - intangibles - liabilities) / shares).toFixed(2);
 //   let information = {
 //     "Fiscal Date Ending": fiscalDateEnding,
 //     "Tangible Book Value Per Share": tbvps,
